@@ -35,6 +35,7 @@ void lock_pairs(void);
 void print_winner(void);
 
 int calculate_pair_strength(int candidate);
+bool find_cycle(void);
 
 int main(int argc, string argv[])
 {
@@ -154,6 +155,7 @@ void add_pairs(void)
 }
 
 // Sort pairs in decreasing order by strength of victory
+// simple algorithm, I may code it better, but too lazy for that
 void sort_pairs(void)
 {
     for (int i = 0; i < pair_count; i++)
@@ -161,35 +163,64 @@ void sort_pairs(void)
         int max = calculate_pair_strength(i);
         int max_pos = i;
 
-        for (int n = 1; n < pair_count; n++)
+        for (int n = i + 1; n < pair_count; n++)
         {
-            int min = calculate_pair_strength(n);
-            if (max < min)
+            int p_max = calculate_pair_strength(n); // possible maximum
+
+            if (max < p_max) //  if current maximum is less than possible maximum
             {
-                max = min;
-                max_pos = n;
+                max = p_max; //  update maximum
+                max_pos = n; //  update position of maximum
             }
         }
 
-        pair temp = pairs[i];
+        pair temp_low = pairs[i];
+        pair temp_high = pairs[max_pos];
 
-        pairs[i] = pairs[max_pos];
-        pairs[max_pos] = temp;
+        pairs[i] = temp_high;
+        pairs[max_pos] = temp_low;
     }
 }
 
 // Lock pairs into the candidate graph in order, without creating cycles
 void lock_pairs(void)
 {
-    // TODO
-    return;
+    for (int i = 0; i < pair_count; i++)
+    {
+        int w = pairs[i].winner;
+        int l = pairs[i].loser;
+
+        locked[w][l] = true;
+
+        // algorithm doesn't work
+        if (find_cycle()) // if there's a cycle, revert changes
+        {
+            locked[w][l] = false;
+        }
+    }
 }
 
 // Print the winner of the election
 void print_winner(void)
 {
-    // TODO
-    return;
+    for (int i = 0; i < candidate_count; i++)
+    {
+        bool has_connections = false;
+
+        for (int n = 0; n < candidate_count; n++)
+        {
+            if (locked[n][i])
+            {
+                has_connections = true;
+                break;
+            }
+        }
+
+        if (!has_connections)
+        {
+            printf("%s\n", candidates[i]);
+        }
+    }
 }
 
 int calculate_pair_strength(int candidate)
@@ -201,6 +232,30 @@ int calculate_pair_strength(int candidate)
     int l_v = preferences[l][w];
 
     return w_v - l_v;
+}
+
+bool find_cycle(void)
+{
+    for (int i = 0; i < candidate_count; i++)
+    {
+        for (int n = i + 1; n < candidate_count; n++)
+        {
+            bool c_a = locked[i][n];
+            bool c_b = locked[n][i];
+
+            if (c_a && c_b)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool find_cycle_new(void)
+{
+    return true;
 }
 
 /*
@@ -232,4 +287,6 @@ debug sort pairs
 
     printf("Pair: %i\n", n);
     printf("WinVoices: %i, LosVoices: %i\n", w_v, l_v);
+
 */
+
