@@ -1,9 +1,11 @@
 // Implements a dictionary's functionality
 
 #include <stdbool.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "dictionary.h"
 
@@ -15,24 +17,45 @@ typedef struct node
 }
 node;
 
+// Funciton prototypes
+void unload_helper(node *n);
+
 // Number of buckets in hash table
-const unsigned int N = 1;
+const unsigned int N = 26;
 
 // Hash table
 node *table[N];
 
+// Number of words in dicitonary
+int dic_words = 0;
+
 // Returns true if word is in dictionary, else false
 bool check(const char *word)
 {
-    // TODO
+    // Get word's first letter
+    char c = tolower(word[0]);
+    // Determine word's bucket
+    int b = hash(&c);
+
+    // Search for the word in dictionary
+    for (node *i = table[b]; i != NULL; i = i->next)
+    {
+        if (strcasecmp(i->word, word) == 0)
+        {
+            // Found word
+            return true;
+        }
+    }
+
+    // The word is not in a dictionary
     return false;
 }
 
 // Hashes word to a number
+// Assume every word starts from lowercase letter
 unsigned int hash(const char *word)
 {
-    // TODO
-    return 0;
+    return word[0] - 97;
 }
 
 // Loads dictionary into memory, returning true if successful, else false
@@ -60,14 +83,19 @@ bool load(const char *dictionary)
         strcpy(n->word, buffer);
         n->next = NULL;
 
-        // hash word to obtain a hash value
-        // TODO:
+        // Hash word to obtain a bucket value
+        int b = hash(buffer);
 
         // insert node into hash table at that location
-        // TODO:
-        n->next = table[0];
-        table[0] = n;
+        n->next = table[b];
+        table[b] = n;
+
+        // count words in dictionary
+        dic_words++;
     }
+
+    // Close dictionary file
+    fclose(dic);
 
     return true;
 }
@@ -75,24 +103,26 @@ bool load(const char *dictionary)
 // Returns number of words in dictionary if loaded, else 0 if not yet loaded
 unsigned int size(void)
 {
-    // TODO
-    return 0;
+    return dic_words;
 }
 
 // Unloads dictionary from memory, returning true if successful, else false
 bool unload(void)
 {
-    // TODO
-    return false;
-}
-
-/*
-
-Check content of a hash table
-
-    for (node* i = table[0]; i != NULL; i = i->next)
+    for (int i = 0; i < N; i++)
     {
-        printf("Dictionary contains: %s \n", i->word);
+        unload_helper(table[i]);
     }
 
-*/
+    return true;
+}
+
+// Frees node in a linked list one by one
+void unload_helper(node *n)
+{
+    if (n != NULL)
+    {
+        unload_helper(n->next);
+        free(n);
+    }
+}
